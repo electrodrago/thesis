@@ -4,8 +4,8 @@ import torch
 import os
 from os import path as osp
 from torch.nn import functional as F
-from dataset.transform import mod_crop
-from img_utils import img2tensor
+from dataset.transforms import mod_crop
+from .img_utils import img2tensor
 
 
 def scandir(dir_path, suffix=None, recursive=False, full_path=False):

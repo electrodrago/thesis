@@ -115,16 +115,17 @@ class REDSVideoTestDataset(data.Dataset):
             img_gt.squeeze_(0)
 
         return {
-            'lq': imgs_lq, # (t, c, h, w)
-            'gt': img_gt, # (c, h, w)
-            'folder': folder, # folder name
-            'idx': self.data_info['idx'][index], # e.g., 0/99
-            'border': border, # 1 for border, 0 for non-border
-            'lq_path': lq_path # center frame
+            'lq': imgs_lq,  # (t, c, h, w)
+            'gt': img_gt,  # (c, h, w)
+            'folder': folder,  # folder name
+            'idx': self.data_info['idx'][index],  # e.g., 0/99
+            'border': border,  # 1 for border, 0 for non-border
+            'lq_path': lq_path  # center frame
         }
 
     def __len__(self):
         return len(self.data_info['gt_path'])
+
 
 class REDSVideoRecurrentTestDataset(REDSVideoTestDataset):
     """Video test dataset for recurrent architectures, which takes LR video

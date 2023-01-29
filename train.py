@@ -9,8 +9,14 @@ torch.backends.cudnn.benchmark = True
 
 train_loader, val_loaders = None, []
 # Train loaders:
-train_set = REDSRecurrentDataset()
-train_sampler = EnlargedSampler()
+# dataroot_gt, dataroot_lq, meta_info_file, val_partition, io_backend, num_frame, gt_size, interval_list, random_reverse, use_hflip, use_rot, scale, test_mode
+train_set = REDSRecurrentDataset("/content/drive/MyDrive/1THESIS/train/train_sharp", "/content/drive/MyDrive/1THESIS/train/train_sharp_bicubic/X4", "/content/thesis/meta_info/meta_info_REDS_GT.txt", "REDS4", 'disk', 15, 256, [1], False, True, True, 4, False)
+# train_set = REDSRecurrentDataset()
+# train_sampler = EnlargedSampler()
+world_size = 1
+rank = 0
+dataset_enlarge_ratio = 1
+train_sampler = EnlargedSampler(train_set, 1, rank, dataset_enlarge_ratio)
 train_loader = build_dataloader()
 
 dataset_enlarge_ratio = 1

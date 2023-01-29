@@ -5,7 +5,7 @@ from pathlib import Path
 from torch.utils import data as data
 from utils.img_utils import imfrombytes, img2tensor
 from utils.FileClient import FileClient
-from transforms import augment, paired_random_crop
+from .transforms import augment, paired_random_crop
 
 
 # Train dataset builder
@@ -64,7 +64,8 @@ class REDSRecurrentDataset(data.Dataset):
             val_partition = ["000", "011", "015", "020"]
         elif val_partition == 'official':
             val_partition = [f'{v:03d}' for v in range(240, 270)]
-        else: raise ValueError(f'Wrong validation partition {val_partition}.' f"Support ones are ['official', 'REDS4'].")
+        else:
+            raise ValueError(f'Wrong validation partition {val_partition}.' f"Support ones are ['official', 'REDS4'].")
 
         if test_mode:
             self.keys = [v for v in self.keys if v.split('/')[0] in val_partition]
@@ -76,8 +77,8 @@ class REDSRecurrentDataset(data.Dataset):
         self.io_backend = io_backend
 
         # Temporal augmentation configs
-        self.interval_list = interval_list # [1]
-        self.random_reverse = random_reverse # False
+        self.interval_list = interval_list  # [1]
+        self.random_reverse = random_reverse  # False
         interval_str = ','.join(str(x) for x in self.interval_list)
         print(f'Temporal augmentation interval list: [{interval_str}]; 'f'random reverse is {self.random_reverse}.')
 
@@ -86,7 +87,7 @@ class REDSRecurrentDataset(data.Dataset):
             self.file_client = FileClient('disk')
 
         key = self.keys[index]
-        clip_name, frame_name = key.split('/') # key example: 000/00000000
+        clip_name, frame_name = key.split('/')  # key example: 000/00000000
 
         # Determine the neighboring frames
         interval = random.choice(self.interval_list)
