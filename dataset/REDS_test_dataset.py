@@ -25,10 +25,7 @@ class REDSVideoTestDataset(data.Dataset):
             ├── ...
         ├── ...
 
-    For testing datasets, there is no need to prepare LMDB files.
-
     Args:
-        opt (dict): Config for train dataset. It contains the following keys:
         dataroot_gt (str): Data root path for gt.
         dataroot_lq (str): Data root path for lq.
         io_backend (dict): IO backend type and other kwarg.

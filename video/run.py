@@ -16,12 +16,14 @@ from basicsr.losses import build_loss
 import os
 import time
 import torch
+import math
+from basicsr.data.data_sampler import EnlargedSampler
 from collections import OrderedDict
 from copy import deepcopy
 from torch.nn.parallel import DataParallel, DistributedDataParallel
 
-from BUILDCODE.thesis.utils import lr_scheduler as lr_scheduler
-
+from basicsr.models import lr_scheduler as lr_scheduler
+from basicsr.data import build_dataloader, build_dataset
 
 class BaseModel():
     """Base model."""
@@ -1100,13 +1102,82 @@ class VideoRecurrentModel(VideoBaseModel):
 
         self.net_g.train()
 
+def create_train_val_dataloader(opt, logger):
+    # create train and val dataloaders
+    train_loader, val_loaders = None, []
+    train_sampler = None
+    total_epochs = 0
+    total_iters = 0
+    for phase, dataset_opt in opt['datasets'].items():
+        if phase == 'train':
+            dataset_enlarge_ratio = dataset_opt.get('dataset_enlarge_ratio', 1)
+            train_set = build_dataset(dataset_opt)
+            train_sampler = EnlargedSampler(train_set, opt['world_size'], opt['rank'], dataset_enlarge_ratio)
+            train_loader = build_dataloader(
+                train_set,
+                dataset_opt,
+                num_gpu=opt['num_gpu'],
+                dist=opt['dist'],
+                sampler=train_sampler,
+                seed=opt['manual_seed'])
+            num_iter_per_epoch = math.ceil(
+                len(train_set) * dataset_enlarge_ratio / (dataset_opt['batch_size_per_gpu'] * opt['world_size']))
+            total_iters = int(opt['train']['total_iter'])
+            total_epochs = math.ceil(total_iters / (num_iter_per_epoch))
+            logger.info('Training statistics:'
+                        f'\n\tNumber of train images: {len(train_set)}'
+                        f'\n\tDataset enlarge ratio: {dataset_enlarge_ratio}'
+                        f'\n\tBatch size per gpu: {dataset_opt["batch_size_per_gpu"]}'
+                        f'\n\tWorld size (gpu number): {opt["world_size"]}'
+                        f'\n\tRequire iter number per epoch: {num_iter_per_epoch}'
+                        f'\n\tTotal epochs: {total_epochs}; iters: {total_iters}.')
+        elif phase.split('_')[0] == 'val':
+            val_set = build_dataset(dataset_opt)
+            val_loader = build_dataloader(
+                val_set, dataset_opt, num_gpu=opt['num_gpu'], dist=opt['dist'], sampler=None, seed=opt['manual_seed'])
+            logger.info(f'Number of val images/folders in {dataset_opt["name"]}: {len(val_set)}')
+            val_loaders.append(val_loader)
+        else:
+            raise ValueError(f'Dataset phase {phase} is not recognized.')
 
+    return train_loader, train_sampler, val_loaders, total_epochs, total_iters
 
 root_path = "train_BasicVSR_REDS.yml"
 opt, args = parse_options(root_path, is_train=True)
 log_file = "a.txt"
 
+
+
 logger = get_root_logger(logger_name='basicsr', log_level=logging.INFO, log_file=log_file)
+result = create_train_val_dataloader(opt, logger)
+train_loader, train_sampler, val_loaders, total_epochs, total_iters = result
 
+# model = VideoRecurrentModel(opt=opt)
+print(len(val_loaders))
+print(val_loaders[0].dataset)
+print(len(val_loaders[0].dataset))
+print(val_loaders[0].dataset[0]['lq'].shape)
+print(val_loaders[0].dataset[0]['gt'].shape)
+print(val_loaders[0].dataset[0]['folder'])
+print(val_loaders[0].dataset[1]['folder'])
+"""
+1
+<basicsr.data.video_test_dataset.VideoRecurrentTestDataset object at 0x7f77c7e78e20>
+2
+torch.Size([100, 3, 180, 320])
+torch.Size([100, 3, 720, 1280])
+000
+001
+"""
+# print(next(iter(val_loaders[0]))['lq'].shape)
+# print(next(iter(val_loaders[0]))['gt'].shape)
 
-model = VideoRecurrentModel(opt=opt)
+"""
+2023-01-29 04:23:35,695 INFO: Generate data info for VideoTestDataset - REDS4
+2023-01-29 04:23:35,702 INFO: Cache 000 for VideoTestDataset...
+tcmalloc: large alloc 1105920000 bytes == 0xc802000 @  0x7fbbd2c10680 0x7fbbd2c31824 0x7fbbd2c31b8a 0x7fbb53636dc5 0x7fbb53614053 0x7fbb806d812f 0x7fbb806d8f50 0x7fbb806d8fa4 0x7fbb806d90ef 0x7fbb817d0d3b 0x7fbb81820b30 0x7fbb80d941a9 0x7fbb817c8d33 0x7fbb817c8da0 0x7fbb811f3799 0x7fbb80da7ced 0x7fbb81955643 0x7fbb81324f2e 0x7fbb82c331c8 0x7fbb82c33656 0x7fbb8135ee3e 0x7fbba94835f9 0x5f5b39 0x5f6706 0x57165d 0x569d8a 0x5f60c3 0x56bab6 0x569d8a 0x50b3a0 0x570b82
+2023-01-29 04:23:41,413 INFO: Dataset [VideoRecurrentTestDataset] - REDS4 is built.
+2023-01-29 04:23:41,414 INFO: Number of val images/folders in REDS4: 1
+self.lq torch.Size([100, 3, 180, 320])
+self.gt torch.Size([100, 3, 720, 1280])
+"""
