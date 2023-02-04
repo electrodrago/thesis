@@ -1,0 +1,2 @@
+- masked_loss for L1 Loss
+- Change Pixel Loss to L1
