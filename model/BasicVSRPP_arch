@@ -173,16 +173,21 @@ class BasicVSRPlusPlus(nn.Module):
         feat_prop = flows.new_zeros(n, self.mid_channels, h, w)
         for i, idx in enumerate(frame_idx):
             feat_current = feats['spatial'][mapping_idx[idx]]
+            # feat_current: [b, 64, 64, 64]
+
             if self.cpu_cache:
                 feat_current = feat_current.cuda()
                 feat_prop = feat_prop.cuda()
             # second-order deformable alignment
             if i > 0 and self.is_with_alignment:
+
+                # flow_n1: [b, 2, 64, 64]
                 flow_n1 = flows[:, flow_idx[i], :, :, :]
                 if self.cpu_cache:
                     flow_n1 = flow_n1.cuda()
 
                 cond_n1 = flow_warp(feat_prop, flow_n1.permute(0, 2, 3, 1))
+                # cond_n1: [b, 64, 64, 64]
 
                 # initialize second-order features
                 feat_n2 = torch.zeros_like(feat_prop)
