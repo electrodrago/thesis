@@ -12,7 +12,7 @@ from model.SPyNet_arch import SpyNet
 
 
 class TheVSR(nn.Module):
-    def __init__(self, num_feat=64, num_block=15, spynet_path=None):
+    def __init__(self, num_feat=64, num_block=7, spynet_path=None):
         super().__init__()
         self.num_feat = num_feat
 
