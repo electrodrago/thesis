@@ -1,9 +1,14 @@
+import sys, os
 import math
 import torch
 from torch import nn as nn
 from torch.nn import functional as F
 
-from ..utils import flow_warp
+sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+
+from utils.arch_utils import flow_warp
 
 
 class BasicModule(nn.Module):

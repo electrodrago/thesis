@@ -1,10 +1,14 @@
+import sys, os
 import torch
 from torch import nn as nn
 from collections import OrderedDict
 
-from ..utils import ResidualBlockNoBN, flow_warp, make_layer
-from .SPyNet_arch import SpyNet
+sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
+
+from utils.arch_utils import ResidualBlockNoBN, flow_warp, make_layer
+from model.SPyNet_arch import SpyNet
 
 
 class TheVSR(nn.Module):
@@ -83,7 +87,7 @@ class TheVSR(nn.Module):
 
         out_prop = []
         # Tensor same dtype, same device
-        feat_prop = flows.new_zeros(b, self.num_feat, h, w)
+        feat_prop = feat.new_zeros(b, self.num_feat, h, w)
         for i in range_:
             feat_i = feat[:, i, :, :, :]
             if back:
@@ -92,16 +96,19 @@ class TheVSR(nn.Module):
                     feat_prop = flow_warp(feat_prop, flow.permute(0, 2, 3, 1))
             else:
                 if i > start_warp:
-                    flow = flows[:, i, :, :, :]
+                    flow = flows[:, i - 1, :, :, :]
                     feat_prop = flow_warp(feat_prop, flow.permute(0, 2, 3, 1))
+
             feat_grid = [feat_i]
             if fp_dict:
                 for j in fp_dict.keys():
                     feat_grid.append(fp_dict[j][i])
+
             # Insert feature to head and prop to tail
             feat_grid.append(feat_prop)
             feat_prop = torch.cat(feat_grid, dim=1)
-            out_prop.append(trunk(feat_prop))
+            feat_prop = trunk(feat_prop)
+            out_prop.append(feat_prop)
         return out_prop
 
     def forward(self, lqs: torch.Tensor):
@@ -109,17 +116,9 @@ class TheVSR(nn.Module):
         b, n, c, h, w = lqs.size()
 
         for _ in range(0, 3):  # at most 3 cleaning, determined empirically
-            if self.is_sequential_cleaning:
-                residues = []
-                for i in range(0, n):
-                    residue_i = self.image_cleaning(lqs[:, i, :, :, :])
-                    lqs[:, i, :, :, :] += residue_i
-                    residues.append(residue_i)
-                residues = torch.stack(residues, dim=1)
-            else:  # time -> batch, then apply cleaning at once
-                lqs = lqs.view(-1, c, h, w)
-                residues = self.image_cleaning(lqs)
-                lqs = (lqs + residues).view(b, n, c, h, w)
+            lqs = lqs.view(-1, c, h, w)
+            residues = self.image_cleaning(lqs)
+            lqs = (lqs + residues).view(b, n, c, h, w)
 
             # determine whether to continue cleaning
             if torch.mean(torch.abs(residues)) < 1.0:
@@ -127,7 +126,8 @@ class TheVSR(nn.Module):
 
         flows_forward, flows_backward = self.get_flow(lqs)
 
-        feat = self.feat_extract(lqs)
+        feat = self.feat_extract(lqs.view(-1, c, h, w))
+        feat = feat.view(b, n, -1, h, w)
 
         # Feature propagation dict for grid: back_trunk, for_trunk
         fp_dict = OrderedDict()
@@ -135,7 +135,7 @@ class TheVSR(nn.Module):
         # backward branch 1
         bb1 = self.propagate_each(feat, None, flows_backward, self.backward_trunk_1, back=True)
         fp_dict['back_trunk_1'] = []
-        for i in range(len(bb1)):
+        for i in bb1:
             fp_dict['back_trunk_1'].insert(0, i)
 
         # forward branch 1
@@ -145,7 +145,7 @@ class TheVSR(nn.Module):
         # backward branch 2
         bb2 = self.propagate_each(feat, fp_dict, flows_backward, self.backward_trunk_2, back=True)
         fp_dict['back_trunk_2'] = []
-        for i in range(len(bb2)):
+        for i in bb2:
             fp_dict['back_trunk_2'].insert(0, i)
 
         # forward branch 2
@@ -162,11 +162,11 @@ class TheVSR(nn.Module):
             out = self.lrelu(self.pixel_shuffle(self.upconv2(out)))
             out = self.lrelu(self.conv_hr(out))
             out = self.conv_last(out)
-            base = self.img_upsample(x[:, i, :, :, :])
+            base = self.img_upsample(lqs[:, i, :, :, :])
             out += base
             out_l.append(out)
 
-        return torch.stack(out_l, dim=1)
+        return torch.stack(out_l, dim=1), lqs
 
 
 class ConvResidualBlocks(nn.Module):

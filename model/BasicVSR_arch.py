@@ -2,7 +2,7 @@ import torch
 from torch import nn as nn
 from torch.nn import functional as F
 
-from .arch_utils import ResidualBlockNoBN, flow_warp, make_layer
+from ..utils.arch_utils import ResidualBlockNoBN, flow_warp, make_layer
 from .SPyNet_arch import SpyNet
 
 
