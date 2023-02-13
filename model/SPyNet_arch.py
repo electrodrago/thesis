@@ -3,7 +3,7 @@ import torch
 from torch import nn as nn
 from torch.nn import functional as F
 
-from .arch_utils import flow_warp
+from ..utils import flow_warp
 
 
 class BasicModule(nn.Module):
