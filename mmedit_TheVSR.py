@@ -111,7 +111,7 @@ class RealBasicVSRNet(nn.Module):
             out_prop.append(feat_prop)
         return out_prop
 
-    def forward(self, lqs: torch.Tensor):
+    def forward(self, lqs: torch.Tensor, return_lqs=False):
         # b, 15, 3, h, w
         b, n, c, h, w = lqs.size()
 
@@ -166,7 +166,11 @@ class RealBasicVSRNet(nn.Module):
             out += base
             out_l.append(out)
 
-        return torch.stack(out_l, dim=1), lqs
+        print("Done 1 round")
+        if return_lqs:
+          return torch.stack(out_l, dim=1), lqs
+        else:
+          return torch.stack(out_l, dim=1)
 
     def init_weights(self, pretrained=None, strict=True):
         """Init weights for models.
