@@ -3,8 +3,8 @@ import numpy as np
 import random
 import torch
 
-
-def build_dataloader(dataset, phase, batch_size, num_workers, num_gpu=1, dist=False, sampler=None, seed=None, pin_memory=False, persistent_workers=False):
+# TODO: Check set pin_memory to True with CUDAPrefetch
+def build_dataloader(dataset, phase, batch_size, num_workers, num_gpu=1, sampler=None, seed=None, pin_memory=True, persistent_workers=False):
     """Build dataloader.
 
     Args:

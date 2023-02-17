@@ -276,7 +276,7 @@ lr_config = dict(policy='Step', by_epoch=False, step=[400000], gamma=1)
 checkpoint_config = dict(interval=5000, save_optimizer=True, by_epoch=False)
 
 # remove gpu_collect=True in non distributed training
-evaluation = dict(interval=5000, save_image=False, gpu_collect=True)
+evaluation = dict(interval=1000, save_image=False, gpu_collect=True)
 log_config = dict(
     interval=100,
     hooks=[

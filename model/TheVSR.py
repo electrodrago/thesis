@@ -41,8 +41,7 @@ class TheVSR(nn.Module):
 
         # reconstruction
         # feat + b1 + f1 + b2 + f2: 64 * 5 channels
-        self.fusion = \
-            nn.Conv2d(num_feat * 5, num_feat, 1, 1, 0, bias=True)
+        self.fusion = ConvResidualBlocks(5 * num_feat, num_feat, 5)
 
         self.upconv1 = nn.Conv2d(num_feat, num_feat * 4, 3, 1, 1, bias=True)
         self.upconv2 = nn.Conv2d(num_feat, 64 * 4, 3, 1, 1, bias=True)
@@ -64,6 +63,22 @@ class TheVSR(nn.Module):
             nn.Conv2d(self.num_feat, 3, 3, 1, 1, bias=True),
         )
 
+        self.is_mirror_extended = False
+
+    def check_if_mirror_extended(self, lqs):
+        """Check whether the input is a mirror-extended sequence.
+
+        If mirror-extended, the i-th (i=0, ..., t-1) frame is equal to the (t-1-i)-th frame.
+
+        Args:
+            lqs (tensor): Input low quality (LQ) sequence with shape (n, t, c, h, w).
+        """
+
+        if lqs.size(1) % 2 == 0:
+            lqs_1, lqs_2 = torch.chunk(lqs, 2, dim=1)
+            if torch.norm(lqs_1 - lqs_2.flip(1)) == 0:
+                self.is_mirror_extended = True
+
     def get_flow(self, x):
         b, n, c, h, w = x.size()
 
@@ -71,7 +86,11 @@ class TheVSR(nn.Module):
         x_2 = x[:, 1:, :, :, :].reshape(-1, c, h, w)
 
         flows_backward = self.spynet(x_1, x_2).view(b, n - 1, 2, h, w)
-        flows_forward = self.spynet(x_2, x_1).view(b, n - 1, 2, h, w)
+        # flows_forward = self.spynet(x_2, x_1).view(b, n - 1, 2, h, w)
+        if self.is_mirror_extended:  # flows_forward = flows_backward.flip(1)
+            flows_forward = flows_backward.flip(1)
+        else:
+            flows_forward = self.spynet(x_2, x_1).view(b, n - 1, 2, h, w)
         # flows_backward: [b, 14, 2, h, w]
 
         return flows_forward, flows_backward
@@ -90,6 +109,8 @@ class TheVSR(nn.Module):
         feat_prop = feat.new_zeros(b, self.num_feat, h, w)
         for i in range_:
             feat_i = feat[:, i, :, :, :]
+            # feat_i: [b, 64, 64, 64]
+
             if back:
                 if i < start_warp:
                     flow = flows[:, i, :, :, :]
@@ -98,20 +119,24 @@ class TheVSR(nn.Module):
                 if i > start_warp:
                     flow = flows[:, i - 1, :, :, :]
                     feat_prop = flow_warp(feat_prop, flow.permute(0, 2, 3, 1))
+            # feat_prop: [b, 64, 64, 64]
 
             feat_grid = [feat_i]
+
+            # Grid propagation
             if fp_dict:
                 for j in fp_dict.keys():
                     feat_grid.append(fp_dict[j][i])
 
             # Insert feature to head and prop to tail
             feat_grid.append(feat_prop)
-            feat_prop = torch.cat(feat_grid, dim=1)
-            feat_prop = trunk(feat_prop)
+            feat_grid = torch.cat(feat_grid, dim=1)
+            feat_prop = feat_prop + trunk(feat_grid)
             out_prop.append(feat_prop)
+
         return out_prop
 
-    def forward(self, lqs: torch.Tensor):
+    def forward(self, lqs: torch.Tensor, return_lqs=False):
         # b, 15, 3, h, w
         b, n, c, h, w = lqs.size()
 
@@ -124,10 +149,15 @@ class TheVSR(nn.Module):
             if torch.mean(torch.abs(residues)) < 1.0:
                 break
 
+        self.check_if_mirror_extended(lqs)
+
         flows_forward, flows_backward = self.get_flow(lqs)
 
+        # Input: shape(lqs): [b, 3, 64, 64]
+        # Output: shape(feat): [b, 64, 64, 64]
         feat = self.feat_extract(lqs.view(-1, c, h, w))
         feat = feat.view(b, n, -1, h, w)
+        # feat: [b, 15, 64, 64, 64]
 
         # Feature propagation dict for grid: back_trunk, for_trunk
         fp_dict = OrderedDict()
@@ -155,9 +185,10 @@ class TheVSR(nn.Module):
         out_l = []
         for i in range(0, n):
             out = feat[:, i, :, :, :]
-            for j in fp_dict.keys():
-                out = torch.cat([out, fp_dict[j][i]], dim=1)
-            out = self.lrelu(self.fusion(out))
+            for trunk in fp_dict.keys():
+                out = torch.cat([out, fp_dict[trunk][i]], dim=1)
+
+            out = self.fusion(out)
             out = self.lrelu(self.pixel_shuffle(self.upconv1(out)))
             out = self.lrelu(self.pixel_shuffle(self.upconv2(out)))
             out = self.lrelu(self.conv_hr(out))
@@ -166,7 +197,10 @@ class TheVSR(nn.Module):
             out += base
             out_l.append(out)
 
-        return torch.stack(out_l, dim=1), lqs
+        if return_lqs:
+            return torch.stack(out_l, dim=1), lqs
+        else:
+            return torch.stack(out_l, dim=1)
 
 
 class ConvResidualBlocks(nn.Module):

@@ -12,49 +12,12 @@ from utils.metrics_utils import psnr
 from utils.img_utils import tensor2img, imwrite
 from model.BasicVSR_arch import BasicVSR
 from utils.losses_utils import CharbonnierLoss, L1Loss
+# TODO: setup wandb
 
 
 def safe_mkdir(path):
     if not os.path.exists(path):
         os.makedirs(path)
-
-
-model_opt = dict(
-    network_g=dict(
-        num_feat=64,
-        num_block=30,
-        spynet_path=""
-    ),
-    ckpt=None  # "path"
-)
-
-train_opt = dict(
-    ema_decay=0.999,
-    optim_g=dict(
-        type='Adam',
-        lr=0.0002,
-        weight_decay=0,
-        betas=[0.9, 0.99]
-    ),
-    total_iter=300000,
-    warmup_iter=-1,
-    fix_flow=5000,
-    flow_lr_mul=0.125,
-    pixel_opt=dict(  # charbonnier loss
-        loss_weight=1.0,
-        reduction='mean'
-    ),
-    cleaning_opt=dict(  # L1 loss
-        loss_weight=1.0,
-        reduction='mean'
-    )
-)
-
-val_opt = dict(
-    metrics=dict(
-
-    )
-)
 
 
 class Net():
