@@ -273,13 +273,13 @@ optimizers = dict(generator=dict(type='Adam', lr=1e-4, betas=(0.9, 0.99)))
 total_iters = 300000
 lr_config = dict(policy='Step', by_epoch=False, step=[400000], gamma=1)
 
-checkpoint_config = dict(interval=10, save_optimizer=True, by_epoch=False)
+checkpoint_config = dict(interval=1000, save_optimizer=True, by_epoch=False)
 
 # remove gpu_collect=True in non distributed training
-evaluation = dict(interval=5000, save_image=False, gpu_collect=True)
+evaluation = dict(interval=3000, save_image=False, gpu_collect=True)
 
 log_config = dict(
-    interval=100,
+    interval=10,
     hooks=[
         dict(type='TextLoggerHook', by_epoch=False),
         dict(type='TensorboardLoggerHook'),
