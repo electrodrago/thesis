@@ -1,14 +1,18 @@
+import sys, os
+import torch
+import math
+import time
+
+sys.path.append(os.path.dirname(__file__))
+
 from dataset.REDS_dataset import REDSRecurrentDataset
 from dataset.data_sampler import EnlargedSampler
 from dataset.REDS_test_dataset import REDSVideoTestDataset
 from dataset.build_dataloader import build_dataloader
 from dataset.prefetcher import CUDAPrefetcher, CPUPrefetcher
-import torch
-import math
-from network.net import Net
-import sys, os
 
-sys.path.append(os.path.dirname(__file__))
+from network.net import Net
+
 
 torch.backends.cudnn.benchmark = True
 
@@ -88,23 +92,21 @@ print('Training statistics:'
 model_opt = dict(
     network_g=dict(
         num_feat=64,
-        num_block=30,
+        num_block=10,
         spynet_path=""
     ),
-    ckpt=None #"1200.ckpt"  # "path"
+    ckpt=None
 )
 
 train_opt = dict(
-    ema_decay=0,  # TODO: set to this value for VSR 0.999,
+    ema_decay=0,        # 0: not use ema
     optim_g=dict(
-        type='Lion',  # Adam
+        type='Lion',    # Adam
         lr=0.0002,
         weight_decay=0,
         betas=[0.9, 0.99]
     ),
-    fix_flow=5000,
-    flow_lr_mul=0.125,
-    pixel_opt=dict(  # charbonnier loss
+    pixel_opt=dict(     # Charbonnier loss
         loss_weight=1.0,
         reduction='mean'
     ),
@@ -121,10 +123,6 @@ model = Net(model_opt, train_opt, is_train=True)
 
 # model.print_network(model.net_g)
 
-print(model.cleaning_loss)
-print(model.pixel_loss)
-print(model.optimizer_g)
-model.save_training_state(1, 1200, "")
 # model.resume_training("1200.ckpt")
 # prefetcher = CPUPrefetcher(train_loader)  # CUDAPrefetcher(train_loader)
 

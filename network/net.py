@@ -4,13 +4,16 @@ import torch.nn.functional as F
 from os import path as oisp
 from tqdm import tqdm
 import numpy as np
-import os
 import time
 from collections import OrderedDict
+from lion_pytorch import Lion
+import sys, os
+
+sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from utils.metrics_utils import psnr
 from utils.img_utils import tensor2img, imwrite
-from model.BasicVSR_arch import BasicVSR
 from utils.losses_utils import CharbonnierLoss, L1Loss
 # TODO: setup wandb
 
@@ -33,12 +36,11 @@ class Net():
         self.is_train = is_train
         self.optimizers = []
 
-        self.net_g = BasicVSR(**self.model_opt['network_g'])
+        self.net_g = None
         self.net_g = self.model_to_device(self.net_g)
 
         if self.is_train:
             self.init_training_settings()
-            self.fix_flow_iter = self.train_val_opt['fix_flow']
 
         # Load pretrained network
         load_path = self.model_opt['ckpt']
@@ -86,29 +88,7 @@ class Net():
             net_g_ema_params[k].data.mul_(decay).add_(net_g_params[k].data, alpha=1 - decay)
 
     def setup_optimizers(self):
-        flow_lr_mul = self.train_val_opt['flow_lr_mul']
-        print('Multiply the learning rate for flow network with {flow_lr_mul}.')
-        if flow_lr_mul == 1:
-            optim_params = self.net_g.parameters()
-        else:  # separate flow params and normal params for different lr
-            normal_params = []
-            flow_params = []
-            for name, param in self.net_g.named_parameters():
-                if 'spynet' in name:
-                    flow_params.append(param)
-                else:
-                    normal_params.append(param)
-            optim_params = [
-                {  # add normal params first
-                    'params': normal_params,
-                    'lr': self.train_val_opt['optim_g']['lr']
-                },
-                {
-                    'params': flow_params,
-                    'lr': self.train_val_opt['optim_g']['lr'] * flow_lr_mul
-                },
-            ]
-
+        optim_params = self.net_g.parameters()
         optim_type = self.train_val_opt['optim_g'].pop('type')
         self.optimizer_g = self.get_optimizer(optim_type, optim_params, **self.train_val_opt['optim_g'])
         self.optimizers.append(self.optimizer_g)
@@ -128,6 +108,8 @@ class Net():
             optimizer = torch.optim.RMSprop(params, lr, **kwargs)
         elif optim_type == 'Rprop':
             optimizer = torch.optim.Rprop(params, lr, **kwargs)
+        elif optim_type == 'Lion':
+            optimizer = Lion(params, lr, **kwargs)
         else:
             raise NotImplementedError(f'optimizer {optim_type} is not supported yet.')
         return optimizer
@@ -137,17 +119,6 @@ class Net():
         self.gt = data['gt'].to(self.device)
 
     def optimize_parameters(self, current_iter):
-        # Choose parameters to optimize, after self.fix_flow_iter, train all
-        if self.fix_flow_iter:
-            if current_iter == 1:
-                print(f'Fix flow network and feature extractor for {self.fix_flow_iter} iters.')
-                for name, param in self.net_g.named_parameters():
-                    if 'spynet' in name:
-                        param.requires_grad_(False)
-            elif current_iter == self.fix_flow_iter:
-                print('Train all the parameters.')
-                self.net_g.requires_grad_(True)
-
         self.optimizer_g.zero_grad()
         self.output, lq_clean = self.net_g(self.lq)
 

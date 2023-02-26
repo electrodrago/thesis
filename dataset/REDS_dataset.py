@@ -3,9 +3,14 @@ import random
 import torch
 from pathlib import Path
 from torch.utils import data as data
+import sys, os
+
+sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
 from utils.img_utils import imfrombytes, img2tensor
 from utils.FileClient import FileClient
-from .transforms import augment, paired_random_crop
+from transforms import augment, paired_random_crop
 
 
 # Train dataset builder

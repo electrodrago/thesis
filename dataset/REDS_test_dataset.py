@@ -1,6 +1,11 @@
 import glob
 from os import path as osp
 from torch.utils import data as data
+import sys, os
+
+sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
 from utils.data_utils import read_img_seq, scandir
 
 

@@ -1,11 +1,15 @@
 import cv2
 import numpy as np
 import torch
-import os
 from os import path as osp
 from torch.nn import functional as F
 from dataset.transforms import mod_crop
-from .img_utils import img2tensor
+import sys, os
+
+sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+from img_utils import img2tensor
 
 
 def scandir(dir_path, suffix=None, recursive=False, full_path=False):
