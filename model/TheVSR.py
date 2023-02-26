@@ -12,12 +12,13 @@ from model.SPyNet_arch import SpyNet
 
 
 class TheVSR(nn.Module):
-    def __init__(self, num_feat=64, num_block=7, spynet_path=None):
+    def __init__(self, num_feat=64, num_block=10, spynet_path=None):
         super().__init__()
         self.num_feat = num_feat
 
         # feature extraction module
         self.feat_extract = ConvResidualBlocks(3, num_feat // 2, 5)
+        self.feat_extract_clean = ConvResidualBlocks(3, num_feat // 2, 5)
 
         # alignment
         self.spynet = SpyNet(spynet_path)
@@ -159,12 +160,11 @@ class TheVSR(nn.Module):
         # Input: shape(lqs): [b, 3, 64, 64]
         # Output: shape(feat): [b, 32, 64, 64]
         feat = self.feat_extract(lqs.view(-1, c, h, w))
-        feat_clean = self.feat_extract(lqs_clean.view(-1, c, h, w))
+        feat_clean = self.feat_extract_clean(lqs_clean.view(-1, c, h, w))
 
         feat = feat.view(b, n, -1, h, w)
         feat_clean = feat_clean.view(b, n, -1, h, w)
         feat = torch.cat([feat, feat_clean], dim=2)
-        print(feat.shape)
         # feat: [b, 15, 64, 64, 64]
 
         # Feature propagation dict for grid: back_trunk, for_trunk
