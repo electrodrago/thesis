@@ -17,7 +17,7 @@ class TheVSR(nn.Module):
         self.num_feat = num_feat
 
         # feature extraction module
-        self.feat_extract = ConvResidualBlocks(3, num_feat, 5)
+        self.feat_extract = ConvResidualBlocks(3, num_feat // 2, 5)
 
         # alignment
         self.spynet = SpyNet(spynet_path)
@@ -64,6 +64,7 @@ class TheVSR(nn.Module):
         )
 
         self.is_mirror_extended = False
+        self.spynet.requires_grad_(False)
 
     def check_if_mirror_extended(self, lqs):
         """Check whether the input is a mirror-extended sequence.
@@ -140,10 +141,12 @@ class TheVSR(nn.Module):
         # b, 15, 3, h, w
         b, n, c, h, w = lqs.size()
 
+        lqs_clean = lqs.detach().clone()
+
         for _ in range(0, 3):  # at most 3 cleaning, determined empirically
-            lqs = lqs.view(-1, c, h, w)
-            residues = self.image_cleaning(lqs)
-            lqs = (lqs + residues).view(b, n, c, h, w)
+            lqs_clean = lqs_clean.view(-1, c, h, w)
+            residues = self.image_cleaning(lqs_clean)
+            lqs_clean = (lqs_clean + residues).view(b, n, c, h, w)
 
             # determine whether to continue cleaning
             if torch.mean(torch.abs(residues)) < 1.0:
@@ -154,9 +157,14 @@ class TheVSR(nn.Module):
         flows_forward, flows_backward = self.get_flow(lqs)
 
         # Input: shape(lqs): [b, 3, 64, 64]
-        # Output: shape(feat): [b, 64, 64, 64]
+        # Output: shape(feat): [b, 32, 64, 64]
         feat = self.feat_extract(lqs.view(-1, c, h, w))
+        feat_clean = self.feat_extract(lqs_clean.view(-1, c, h, w))
+
         feat = feat.view(b, n, -1, h, w)
+        feat_clean = feat_clean.view(b, n, -1, h, w)
+        feat = torch.cat([feat, feat_clean], dim=2)
+        print(feat.shape)
         # feat: [b, 15, 64, 64, 64]
 
         # Feature propagation dict for grid: back_trunk, for_trunk

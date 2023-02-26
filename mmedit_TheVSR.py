@@ -12,7 +12,7 @@ from mmedit.utils import get_root_logger
 
 @BACKBONES.register_module()
 class RealBasicVSRNet(nn.Module):
-    def __init__(self, num_feat=64, num_block=7, spynet_path=None):
+    def __init__(self, num_feat=64, num_block=10, spynet_path=None):
         super().__init__()
         self.num_feat = num_feat
 
@@ -64,6 +64,7 @@ class RealBasicVSRNet(nn.Module):
         )
 
         self.is_mirror_extended = False
+        self.spynet.requires_grad_(False)
 
     def check_if_mirror_extended(self, lqs):
         """Check whether the input is a mirror-extended sequence.

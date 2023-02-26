@@ -2,18 +2,21 @@ from dataset.REDS_dataset import REDSRecurrentDataset
 from dataset.data_sampler import EnlargedSampler
 from dataset.REDS_test_dataset import REDSVideoTestDataset
 from dataset.build_dataloader import build_dataloader
-from dataset.prefetcher import CUDAPrefetcher
+from dataset.prefetcher import CUDAPrefetcher, CPUPrefetcher
 import torch
 import math
 from network.net import Net
+import sys, os
+
+sys.path.append(os.path.dirname(__file__))
 
 torch.backends.cudnn.benchmark = True
 
 train_loader, val_loaders = None, []
 train_dataset_opt = dict(
-    dataroot_gt="/content/drive/MyDrive/1THESIS/train/train_sharp",
-    dataroot_lq="/content/drive/MyDrive/1THESIS/train/train_sharp_bicubic/X4",
-    meta_info_file="/content/thesis/meta_info/meta_info_REDS_GT.txt",
+    dataroot_gt="D:\\VSR_dataset\\val_sharp\\val\\val_sharp",
+    dataroot_lq="D:\\VSR_dataset\\val_sharp\\val\\val_sharp_bicubic\\X4",
+    meta_info_file=".\\meta_info\\meta_info_REDS_GT.txt",
     val_partition="REDS4",
     io_backend="disk",
     num_frame=15,
@@ -62,25 +65,25 @@ print('Training statistics:'
     f'\n\tTotal epochs: {total_epochs}; iters: {total_iters}.')
 
 
-val_dataset_opt = dict(
-    dataroot_gt="/content/drive/MyDrive/1THESIS/val/val_sharp",
-    dataroot_lq="/content/drive/MyDrive/1THESIS/val/val_sharp_bicubic/X4",
-    io_backend=dict(type='disk'),
-    cache_data=True,
-    name='REDS4',
-    num_frame=-1,
-    meta_info_file=None
-)
-val_set = REDSVideoTestDataset(**val_dataset_opt)
+# val_dataset_opt = dict(
+#     dataroot_gt="D:\\VSR_dataset\\val_sharp\\val\\val_sharp",
+#     dataroot_lq="D:\\VSR_dataset\\val_sharp\\val\\val_sharp_bicubic\\X4",
+#     io_backend=dict(type='disk'),
+#     cache_data=True,
+#     name='REDS4',
+#     num_frame=-1,
+#     meta_info_file=None
+# )
+# val_set = REDSVideoTestDataset(**val_dataset_opt)
 
-val_loader_opt = dict(
-    dataset=val_set,
-    phase="val"
-)
-val_loader = build_dataloader(**val_dataset_opt)
+# val_loader_opt = dict(
+#     dataset=val_set,
+#     phase="val"
+# )
+# val_loader = build_dataloader(**val_dataset_opt)
 
-print(f'Number of val images/folders in REDS4: {len(val_set)}')
-val_loaders.append(val_loader)
+# print(f'Number of val images/folders in REDS4: {len(val_set)}')
+# val_loaders.append(val_loader)
 
 model_opt = dict(
     network_g=dict(
@@ -88,13 +91,13 @@ model_opt = dict(
         num_block=30,
         spynet_path=""
     ),
-    ckpt=None  # "path"
+    ckpt=None #"1200.ckpt"  # "path"
 )
 
 train_opt = dict(
-    ema_decay=0.999,
+    ema_decay=0,  # TODO: set to this value for VSR 0.999,
     optim_g=dict(
-        type='Adam',
+        type='Lion',  # Adam
         lr=0.0002,
         weight_decay=0,
         betas=[0.9, 0.99]
@@ -116,30 +119,37 @@ current_iter = 0
 # TODO: build model and resume training code
 model = Net(model_opt, train_opt, is_train=True)
 
-prefetcher = CUDAPrefetcher(train_loader)
+# model.print_network(model.net_g)
 
-for epoch in range(start_epoch, total_epochs + 1):
-    train_sampler.set_epoch(epoch)
-    prefetcher.reset()
-    train_data = prefetcher.next()
+print(model.cleaning_loss)
+print(model.pixel_loss)
+print(model.optimizer_g)
+model.save_training_state(1, 1200, "")
+# model.resume_training("1200.ckpt")
+# prefetcher = CPUPrefetcher(train_loader)  # CUDAPrefetcher(train_loader)
 
-    while train_data is not None:
-        current_iter += 1
-        if current_iter > total_iters:
-            break
+# for epoch in range(start_epoch, total_epochs + 1):
+#     train_sampler.set_epoch(epoch)
+#     prefetcher.reset()
+#     train_data = prefetcher.next()
 
-        print(f'Epoch: {epoch}, iter: {current_iter}')
-        # Feed to model
-        model.feed_data(train_data)
+#     while train_data is not None:
+#         current_iter += 1
+#         if current_iter > total_iters:
+#             break
 
-        # Compute loss, back_prop
-        model.optimize_parameters(current_iter)
+#         print(f'Epoch: {epoch}, iter: {current_iter}')
+#         # Feed to model
+#         model.feed_data(train_data)
 
-        # Evaluate
-        for val_loader in val_loaders:
-            model.validation_psnr(val_loader, current_iter, 'path_to_save_img')
+#         # Compute loss, back_prop
+#         model.optimize_parameters(current_iter)
 
-        if current_iter % 1000 == 0:
-            model.save_training_state(epoch, current_iter, 'path_to_save_ckpt')
+#         # Evaluate
+#         for val_loader in val_loaders:
+#             model.validation_psnr(val_loader, current_iter, 'path_to_save_img')
 
-        train_data = prefetcher.next()
+#         if current_iter % 1000 == 0:
+#             model.save_training_state(epoch, current_iter, 'path_to_save_ckpt')
+
+#         train_data = prefetcher.next()

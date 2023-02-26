@@ -1,7 +1,10 @@
 # cd BUILDCODE/thesis/model
 import torch
 from TheVSR import TheVSR
+from SPyNet_arch import SpyNet
 from prettytable import PrettyTable
+from collections import OrderedDict
+
 
 
 def count_parameters(model):
@@ -18,12 +21,27 @@ def count_parameters(model):
     return total_params
 
 
-model = TheVSR(64, 7, 'spynet.pth')
+model = TheVSR(64, 10, 'spynet.pth')
 
-input = torch.randn((2, 15, 3, 64, 64))
+input = torch.randn((2, 14, 3, 64, 64))
 
-hqs, lqs = model(input)
+# hqs, lqs = model(input, input)
 
-print(hqs.shape, lqs.shape)
-
+# print(hqs.shape, lqs.shape)
+model(input, False)
 count_parameters(model)
+
+# Load model for checking
+# ckpt = torch.load("iter_7000.pth", map_location=lambda storage, loc: storage)
+
+# ckpt_dict = OrderedDict()
+
+# for i in ckpt['state_dict'].keys():
+#     if 'generator_' not in i:
+#         if 'step' in i:
+#             continue
+#         k_str = i.replace('generator.', '')
+#         ckpt_dict[k_str] = ckpt['state_dict'][i]
+
+# model.load_state_dict(ckpt_dict)
+# print('Done')
