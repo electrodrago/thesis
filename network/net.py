@@ -67,7 +67,7 @@ class Net():
         if self.ema_decay > 0:
             print('Use Exponential Moving Average with decay: {self.ema_decay}')
             # define network net_g with Exponential Moving Average (EMA)
-            self.net_g_ema = self.model_to_device(BasicVSR(**self.model_opt['network_g']).to(self.device))
+            self.net_g_ema = self.model_to_device(None)
             load_path = self.model_opt['ckpt']
             if load_path is None:
                 self.model_ema(0)  # copy net_g weight

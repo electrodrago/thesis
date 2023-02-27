@@ -1,24 +1,10 @@
-exp_name = 'realbasicvsr_wogan_c64b20_2x30x8_lr1e-4_300k_reds'
+import sys, os
+import torch
+import math
+import time
+from mmedit.datasets import DATASETS, build_dataset
 
-scale = 4
-
-# model settings
-model = dict(
-    type='RealBasicVSR',
-    generator=dict(
-        type='RealBasicVSRNet',
-        num_feat=64,
-        num_block=10,
-        spynet_path='/content/RealBasicVSR/thesis/model/spynet.pth',),
-    pixel_loss=dict(type='L1Loss', loss_weight=1.0, reduction='mean'),
-    cleaning_loss=dict(type='L1Loss', loss_weight=1.0, reduction='mean'),
-    is_use_sharpened_gt_in_pixel=True,
-    is_use_ema=True,
-)
-
-# model training and testing settings
-train_cfg = dict()
-test_cfg = dict(metrics=['PSNR', 'SSIM'], crop_border=0)  # change to [] for test
+sys.path.append(os.path.dirname(__file__))
 
 # dataset settings
 train_dataset_type = 'SRFolderMultipleGTDataset'
@@ -242,8 +228,8 @@ data = dict(
         times=150,
         dataset=dict(
             type=train_dataset_type,
-            lq_folder='/content/drive/MyDrive/1THESIS/train/train_sharp_bicubic/X4',
-            gt_folder='/content/drive/MyDrive/1THESIS/train/train_sharp',
+            lq_folder="D:\\VSR_dataset\\val_sharp\\val\\val_sharp_bicubic\\X4",
+            gt_folder="D:\\VSR_dataset\\val_sharp\\val\\val_sharp",
             num_input_frames=15,
             pipeline=train_pipeline,
             scale=4,
@@ -256,49 +242,7 @@ data = dict(
         pipeline=val_pipeline,
         scale=4,
         test_mode=True),
-    # # test
-    # test=dict(
-    #     type=val_dataset_type,
-    #     lq_folder='data/VideoLQ',
-    #     gt_folder='data/VideoLQ',
-    #     pipeline=test_pipeline,
-    #     scale=4,
-    #     test_mode=True),
 )
 
-# optimizer
-optimizers = dict(generator=dict(type='Adam', lr=1e-4, betas=(0.9, 0.99)))
-
-# learning policy
-total_iters = 300000
-lr_config = dict(policy='Step', by_epoch=False, step=[400000], gamma=1)
-
-checkpoint_config = dict(interval=1000, save_optimizer=True, by_epoch=False)
-
-# remove gpu_collect=True in non distributed training
-evaluation = dict(interval=3100, save_image=False, gpu_collect=True)
-
-log_config = dict(
-    interval=10,
-    hooks=[
-        dict(type='TextLoggerHook', by_epoch=False),
-        dict(type='TensorboardLoggerHook'),
-    ])
-visual_config = None
-
-# custom hook
-custom_hooks = [
-    dict(
-        type='ExponentialMovingAverageHook',
-        module_keys=('generator_ema', ),
-        interval=1,
-        interp_cfg=dict(momentum=0.999),
-    )
-]
-
-dist_params = dict(backend='nccl')
-log_level = 'INFO'
-work_dir = f'./experiments/{exp_name}'
-load_from = None
-resume_from = None
-workflow = [('train', 1)]
+train_ds = build_dataset(data['train'])
+print(len(train_ds))
