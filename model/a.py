@@ -21,7 +21,7 @@ def count_parameters(model):
     return total_params
 
 
-model = TheVSR(64, 10, 'spynet.pth')
+model = TheVSR(64, 9, 'spynet.pth')
 
 input = torch.randn((2, 14, 3, 64, 64))
 

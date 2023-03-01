@@ -60,7 +60,7 @@ class RealBasicVSRNet(nn.Module):
 
         # img cleaning module
         self.image_cleaning = nn.Sequential(
-            ConvResidualBlocks(3, self.num_feat, 15),
+            ConvResidualBlocks(3, self.num_feat, num_block),
             nn.Conv2d(self.num_feat, 3, 3, 1, 1, bias=True),
         )
 
