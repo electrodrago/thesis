@@ -142,7 +142,7 @@ class RealBasicVSRNet(nn.Module):
         # b, 15, 3, h, w
         b, n, c, h, w = lqs.size()
 
-        lqs_clean = lqs.detach().clone()
+        lqs_clean = lqs.clone().detach()
 
         for _ in range(0, 3):  # at most 3 cleaning, determined empirically
             lqs_clean = lqs_clean.view(-1, c, h, w)
