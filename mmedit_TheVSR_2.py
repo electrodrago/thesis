@@ -206,7 +206,7 @@ class RealBasicVSRNet(nn.Module):
             out_l.append(out)
 
         if return_lqs:
-            return torch.stack(out_l, dim=1), lqs
+            return torch.stack(out_l, dim=1), lqs_clean
         else:
             return torch.stack(out_l, dim=1)
 

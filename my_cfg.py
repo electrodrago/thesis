@@ -10,7 +10,7 @@ model = dict(
         num_feat=64,
         num_block=9,
         spynet_path='/content/RealBasicVSR/thesis/model/spynet.pth',),
-    pixel_loss=dict(type='CharbonnierLoss', loss_weight=1.0, reduction='mean'),
+    pixel_loss=dict(type='L1Loss', loss_weight=1.0, reduction='mean'),
     cleaning_loss=dict(type='L1Loss', loss_weight=1.0, reduction='mean'),
     is_use_sharpened_gt_in_pixel=True,
     is_use_ema=True,
@@ -195,7 +195,7 @@ train_pipeline = [
 ]
 
 data = dict(
-    workers_per_gpu=2,
+    workers_per_gpu=10,
     train_dataloader=dict(
         samples_per_gpu=2, drop_last=True, persistent_workers=False),
     val_dataloader=dict(samples_per_gpu=1, persistent_workers=False),
