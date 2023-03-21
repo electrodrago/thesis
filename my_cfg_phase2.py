@@ -10,8 +10,6 @@ model = dict(
         num_feat=64,
         num_block=9,
         spynet_path='/content/RealBasicVSR/thesis/model/spynet.pth',),
-    pixel_loss=dict(type='L1Loss', loss_weight=1.0, reduction='mean'),
-    cleaning_loss=dict(type='L1Loss', loss_weight=1.0, reduction='mean'),
     discriminator=dict(
         type='UNetDiscriminatorWithSpectralNorm',
         in_channels=3,
