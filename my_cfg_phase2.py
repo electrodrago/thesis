@@ -44,7 +44,7 @@ model = dict(
 
 # model training and testing settings
 train_cfg = dict()
-test_cfg = dict(metrics=['PSNR', 'SSIM'], crop_border=0)  # change to [] for test
+test_cfg = dict(metrics=['PSNR'], crop_border=0)  # change to [] for test
 
 # dataset settings
 train_dataset_type = 'SRFolderMultipleGTDataset'
@@ -222,10 +222,7 @@ train_pipeline = [
 
 data = dict(
     workers_per_gpu=10,
-    train_dataloader=dict(
-        samples_per_gpu=2, drop_last=True, persistent_workers=False),
-    val_dataloader=dict(samples_per_gpu=1, persistent_workers=False),
-    test_dataloader=dict(samples_per_gpu=1, workers_per_gpu=1),
+    train_dataloader=dict(samples_per_gpu=1, drop_last=True),
 
     # train
     train=dict(
@@ -238,19 +235,23 @@ data = dict(
             num_input_frames=15,
             pipeline=train_pipeline,
             scale=4,
-            test_mode=False))
+            test_mode=False)),
+    
 )
 
 # optimizer
-optimizers = dict(generator=dict(type='Adam', lr=1e-4, betas=(0.9, 0.99)))
+optimizers = dict(
+    generator=dict(type='Adam', lr=5e-5, betas=(0.9, 0.99)),
+    discriminator=dict(type='Adam', lr=1e-4, betas=(0.9, 0.99)))
 
 # learning policy
-total_iters = 100000
+total_iters = 150000
 lr_config = dict(policy='Step', by_epoch=False, step=[400000], gamma=1)
 
 checkpoint_config = dict(interval=500, save_optimizer=True, by_epoch=False)
 
-
+# remove gpu_collect=True in non distributed training
+# evaluation = dict(interval=5000, save_image=False, gpu_collect=True)
 log_config = dict(
     interval=10,
     hooks=[
@@ -272,6 +273,6 @@ custom_hooks = [
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = f'/content/drive/MyDrive/1THESIS/experiments/{exp_name}'
-load_from = "/content/drive/MyDrive/1THESIS/experiments/realbasicvsr_wogan_c64b20_2x30x8_lr1e-4_300k_reds/iter_100000.pth"
-resume_from = None # "/content/drive/MyDrive/1THESIS/experiments/realbasicvsr_wogan_c64b20_2x30x8_lr1e-4_300k_reds/latest.pth"
+load_from = None # '/content/drive/MyDrive/1THESIS/experiments/realbasicvsr_wogan_c64b20_2x30x8_lr1e-4_300k_reds/iter_100000.pth'  # noqa
+resume_from = '/content/drive/MyDrive/1THESIS/experiments/realbasicvsr_c64b20_1x30x8_lr5e-5_150k_reds/latest.pth'
 workflow = [('train', 1)]
