@@ -230,9 +230,9 @@ test_pipeline = [
 ]
 
 data = dict(
-    workers_per_gpu=2,
+    workers_per_gpu=8,
     train_dataloader=dict(
-        samples_per_gpu=2, drop_last=True, persistent_workers=False),
+        samples_per_gpu=8, drop_last=True, persistent_workers=False),
     val_dataloader=dict(samples_per_gpu=1, persistent_workers=False),
     test_dataloader=dict(samples_per_gpu=1, workers_per_gpu=1),
 
@@ -298,7 +298,7 @@ custom_hooks = [
 
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = '/content/drive/MyDrive/1THESIS/mmedit_TheVSR_3/{exp_name}'
+work_dir = f'/content/drive/MyDrive/1THESIS/mmedit_TheVSR_3/{exp_name}'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]

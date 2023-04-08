@@ -226,7 +226,7 @@ class RealBasicVSRNet(nn.Module):
             out = self.lrelu(self.pixel_shuffle(self.upconv2(out)))
             out = self.lrelu(self.conv_hr(out))
             out = self.conv_last(out)
-            base = self.img_upsample(lqs[:, i, :, :, :])
+            base = self.img_upsample(lqs_clean[:, i, :, :, :])
             out += base
             out_l.append(out)
 
