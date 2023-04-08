@@ -300,5 +300,5 @@ dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = f'/content/drive/MyDrive/1THESIS/mmedit_TheVSR_3/{exp_name}'
 load_from = None
-resume_from = None
+resume_from = "/content/drive/MyDrive/1THESIS/mmedit_TheVSR_3/phase1/latest.pth"
 workflow = [('train', 1)]
