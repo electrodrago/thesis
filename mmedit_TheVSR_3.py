@@ -54,7 +54,7 @@ class RealBasicVSRNet(nn.Module):
         self.conv_hr = nn.Conv2d(64, 64, 3, 1, 1)
         self.conv_last = nn.Conv2d(64, 3, 3, 1, 1)
 
-        self.channel_shuffle = nn.ChannelShuffle(2)
+        self.channel_shuffle = ChannelShuffle(2)
 
         self.img_upsample = \
             nn.Upsample(scale_factor=4, mode='bilinear', align_corners=False)
@@ -281,6 +281,17 @@ def default_init_weights(module_list, scale=1, bias_fill=0, **kwargs):
                 init.constant_(m.weight, 1)
                 if m.bias is not None:
                     m.bias.data.fill_(bias_fill)
+
+
+class ChannelShuffle(nn.Module):
+    def __init__(self, groups):
+        super(ChannelShuffle, self).__init__()
+        self.groups = groups
+    
+    def forward(self, x):
+        n, c, h, w = x.size()
+        g = self.groups
+        return x.view(n, g, c // g, h, w).permute(0, 2, 1, 3, 4).reshape(n, c, h, w)
 
 
 class ResidualBlockNoBN(nn.Module):
