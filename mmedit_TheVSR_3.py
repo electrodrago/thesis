@@ -215,6 +215,8 @@ class RealBasicVSRNet(nn.Module):
 
         # Feature propagation: back_trunk, for_trunk
         b1, b2 = self.propagate_back(feat_1, feat_2, flows_backward)
+        b1.reverse()
+        b2.reverse()
         f1, f2 = self.propagate_for(feat_1, feat_2, b1, b2, flows_forward)
 
         out_l = []
