@@ -1,4 +1,4 @@
-exp_name = 'realbasicvsr_wogan_c64b20_2x30x8_lr1e-4_300k_reds'
+exp_name = 'phase-1_realbasicvsr_wogan_c64b20_2x30x8_lr1e-4_300k_reds'
 
 scale = 4
 
@@ -245,7 +245,7 @@ custom_hooks = [
 
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = f'/content/drive/MyDrive/1THESIS/experiments/{exp_name}'
+work_dir = f'/content/drive/MyDrive/1THESIS/TheVSR_2/{exp_name}'
 load_from = None
 resume_from = "/content/drive/MyDrive/1THESIS/experiments/realbasicvsr_wogan_c64b20_2x30x8_lr1e-4_300k_reds/latest.pth"
 workflow = [('train', 1)]
