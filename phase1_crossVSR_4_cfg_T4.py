@@ -8,7 +8,7 @@ model = dict(
     generator=dict(
         type='RealBasicVSRNet',
         num_feat=64,
-        num_block=20,
+        num_block=10,
         spynet_path='/content/RealBasicVSR/thesis/model/spynet.pth',),
     pixel_loss=dict(type='L1Loss', loss_weight=1.0, reduction='mean'),
     cleaning_loss=dict(type='L1Loss', loss_weight=1.0, reduction='mean'),
@@ -270,7 +270,7 @@ data = dict(
 optimizers = dict(generator=dict(type='Adam', lr=1e-4, betas=(0.9, 0.99)))
 
 # learning policy
-total_iters = 300000
+total_iters = 50000
 lr_config = dict(policy='Step', by_epoch=False, step=[400000], gamma=1)
 
 checkpoint_config = dict(interval=500, save_optimizer=True, by_epoch=False)
@@ -298,7 +298,7 @@ custom_hooks = [
 
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = f'/content/drive/MyDrive/1THESIS/mmedit_TheVSR_3/{exp_name}'
+work_dir = f'/content/drive/MyDrive/1THESIS/mmedit_TheVSR_4/{exp_name}'
 load_from = None
-resume_from = "/content/drive/MyDrive/1THESIS/mmedit_TheVSR_3/phase1/latest.pth"
+resume_from = "/content/drive/MyDrive/1THESIS/mmedit_TheVSR_4/phase1/latest.pth"
 workflow = [('train', 1)]
