@@ -247,5 +247,5 @@ dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = f'/content/drive/MyDrive/1THESIS/final_TheVSR_2/{exp_name}'
 load_from = None
-resume_from = "/content/drive/MyDrive/1THESIS/experiments/realbasicvsr_wogan_c64b20_2x30x8_lr1e-4_300k_reds/latest.pth"
+resume_from = "/content/drive/MyDrive/1THESIS/final_TheVSR_2/phase-1_realbasicvsr_wogan_c64b20_2x30x8_lr1e-4_300k_reds/latest.pth"
 workflow = [('train', 1)]
